@@ -1,0 +1,29 @@
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *"  # 사흘마다 한국 시간 오전 9시
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: waverock-Routesetting-calendar
+            url_secret: ROUTESETTING_URL
+            key_secret: ROUTESETTING_KEY
+            table: calendar_events
+    steps:
+      - name: Ping ${{ matrix.name }}
+        env:
+          SUPABASE_URL: ${{ secrets[matrix.url_secret] }}
+          SUPABASE_KEY: ${{ secrets[matrix.key_secret] }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL%/}/rest/v1/${{ matrix.table }}?select=*&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+          echo "HTTP $status"
+          test "$status" = "200"
